@@ -22,10 +22,11 @@ function Dashboard() {
     };
 
     const menuItems = [
-        { href: '/admin/productos', icon: '📦', label: 'Productos', desc: 'Agregar, editar y eliminar productos' },
-        { href: '/admin/categorias', icon: '📁', label: 'Categorías', desc: 'Gestionar categorías del catálogo' },
-        { href: '/admin/pedidos', icon: '🛒', label: 'Pedidos', desc: 'Ver y gestionar pedidos de clientes' },
-    ];
+    { href: '/admin/productos', icon: '📦', label: 'Productos', desc: 'Agregar, editar y eliminar productos' },
+    { href: '/admin/categorias', icon: '📁', label: 'Categorías', desc: 'Gestionar categorías del catálogo' },
+    { href: '/admin/pedidos', icon: '🛒', label: 'Pedidos', desc: 'Ver y gestionar pedidos de clientes' },
+    { href: '/admin/descuentos', icon: '🏷️', label: 'Descuentos', desc: 'Gestionar descuentos y cupones' },
+    ]; 
 
     return (
         <div className="min-h-screen bg-gray-950 text-white">
