@@ -1,55 +1,54 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../services/api';
 
-function AdminProductos() {
-    const [productos, setProductos] = useState([]);
-    const [form, setForm] = useState({ nombre: '', descripcion: '', slug: '', precio: '', id_categoria: '' });
-    const [categorias, setCategorias] = useState([]);
+export default function AdminDescuentos() {
+    const [descuentos, setDescuentos] = useState([]);
+    const [cupones, setCupones] = useState([]);
+    const [tab, setTab] = useState('descuentos');
+    const [form, setForm] = useState({ nombre: '', tipo: 'porcentaje', valor: '', fecha_inicio: '', fecha_fin: '' });
+    const [formCupon, setFormCupon] = useState({ codigo: '', tipo: 'porcentaje', valor: '', uso_maximo: 1, fecha_inicio: '', fecha_fin: '' });
     const [mostrarForm, setMostrarForm] = useState(false);
-    const [editando, setEditando] = useState(null);
+    const [mensaje, setMensaje] = useState('');
 
     useEffect(() => {
-        cargarProductos();
-        api.get('/categorias').then(res => setCategorias(res.data));
+        cargarDescuentos();
+        cargarCupones();
     }, []);
 
-    const cargarProductos = () => {
-        api.get('/productos').then(res => setProductos(res.data));
+    const cargarDescuentos = () => api.get('/descuentos').then(res => setDescuentos(res.data));
+    const cargarCupones = () => api.get('/cupones').then(res => setCupones(res.data));
+
+    const guardarDescuento = async () => {
+        try {
+            await api.post('/descuentos', form);
+            setMensaje('✅ Descuento creado correctamente');
+            setForm({ nombre: '', tipo: 'porcentaje', valor: '', fecha_inicio: '', fecha_fin: '' });
+            setMostrarForm(false);
+            cargarDescuentos();
+        } catch { setMensaje('❌ Error al crear descuento'); }
     };
 
-    const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+    const guardarCupon = async () => {
+        try {
+            await api.post('/cupones', formCupon);
+            setMensaje('✅ Cupón creado correctamente');
+            setFormCupon({ codigo: '', tipo: 'porcentaje', valor: '', uso_maximo: 1, fecha_inicio: '', fecha_fin: '' });
+            setMostrarForm(false);
+            cargarCupones();
+        } catch { setMensaje('❌ Error al crear cupón'); }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (editando) {
-            await api.put(`/productos/${editando}`, form);
-            setEditando(null);
-        } else {
-            await api.post('/productos', form);
+    const eliminarDescuento = async (id) => {
+        if (confirm('¿Eliminar este descuento?')) {
+            await api.delete(`/descuentos/${id}`);
+            cargarDescuentos();
         }
-        setForm({ nombre: '', descripcion: '', slug: '', precio: '', id_categoria: '' });
-        setMostrarForm(false);
-        cargarProductos();
     };
 
-    const handleEditar = (producto) => {
-        setForm({
-            nombre: producto.nombre,
-            descripcion: producto.descripcion,
-            slug: producto.slug,
-            precio: producto.precio,
-            id_categoria: producto.id_categoria
-        });
-        setEditando(producto.id);
-        setMostrarForm(true);
-    };
-
-    const handleEliminar = async (id) => {
-        if (confirm('¿Estás seguro de eliminar este producto?')) {
-            await api.delete(`/productos/${id}`);
-            cargarProductos();
+    const eliminarCupon = async (id) => {
+        if (confirm('¿Eliminar este cupón?')) {
+            await api.delete(`/cupones/${id}`);
+            cargarCupones();
         }
     };
 
@@ -66,84 +65,151 @@ function AdminProductos() {
             </header>
 
             <div className="max-w-7xl mx-auto px-6 py-10">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h2 className="text-3xl font-bold text-white">📦 Productos</h2>
-                        <p className="text-gray-400 text-sm mt-1">{productos.length} productos registrados</p>
-                    </div>
-                    <button onClick={() => { setMostrarForm(!mostrarForm); setEditando(null); setForm({ nombre: '', descripcion: '', slug: '', precio: '', id_categoria: '' }); }}
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-3xl font-bold">🏷️ Descuentos y Cupones</h2>
+                    <button onClick={() => setMostrarForm(!mostrarForm)}
                         className="bg-orange-500 text-white px-5 py-2 rounded-xl hover:bg-orange-600 transition font-semibold">
-                        {mostrarForm ? 'Cancelar' : '+ Nuevo Producto'}
+                        {mostrarForm ? 'Cancelar' : '+ Nuevo'}
                     </button>
                 </div>
 
-                {mostrarForm && (
+                <div className="flex gap-3 mb-6">
+                    <button onClick={() => { setTab('descuentos'); setMostrarForm(false); }}
+                        className={`px-5 py-2 rounded-xl font-semibold transition ${tab === 'descuentos' ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}>
+                        Descuentos por Producto
+                    </button>
+                    <button onClick={() => { setTab('cupones'); setMostrarForm(false); }}
+                        className={`px-5 py-2 rounded-xl font-semibold transition ${tab === 'cupones' ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}>
+                        Cupones
+                    </button>
+                </div>
+
+                {mensaje && <p className="mb-4 text-green-400 font-semibold">{mensaje}</p>}
+
+                {mostrarForm && tab === 'descuentos' && (
                     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-8">
-                        <h3 className="font-bold text-white text-lg mb-4">{editando ? 'Editar Producto' : 'Nuevo Producto'}</h3>
-                        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input name="nombre" placeholder="Nombre del producto" value={form.nombre} onChange={handleChange}
+                        <h3 className="font-bold text-lg mb-4">Nuevo Descuento</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input placeholder="Nombre del descuento" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })}
                                 className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
-                            <input name="slug" placeholder="Slug (ej: pastillas-freno)" value={form.slug} onChange={handleChange}
-                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
-                            <input name="precio" placeholder="Precio" type="number" value={form.precio} onChange={handleChange}
-                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
-                            <select name="id_categoria" value={form.id_categoria} onChange={handleChange}
+                            <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}
                                 className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                <option value="">Seleccionar categoría</option>
-                                {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                                <option value="porcentaje">Porcentaje (%)</option>
+                                <option value="fijo">Monto Fijo ($)</option>
                             </select>
-                            <textarea name="descripcion" placeholder="Descripción" value={form.descripcion} onChange={handleChange}
-                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 md:col-span-2" />
-                            <button type="submit"
+                            <input placeholder="Valor" type="number" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })}
+                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                            <input type="date" value={form.fecha_inicio} onChange={e => setForm({ ...form, fecha_inicio: e.target.value })}
+                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                            <input type="date" value={form.fecha_fin} onChange={e => setForm({ ...form, fecha_fin: e.target.value })}
+                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                            <button onClick={guardarDescuento}
                                 className="md:col-span-2 bg-orange-500 text-white py-2 rounded-xl hover:bg-orange-600 transition font-semibold">
-                                {editando ? 'Actualizar Producto' : 'Guardar Producto'}
+                                Guardar Descuento
                             </button>
-                        </form>
+                        </div>
                     </div>
                 )}
 
-                <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-                    <table className="w-full">
-                        <thead className="bg-gray-800">
-                            <tr>
-                                <th className="px-6 py-4 text-left text-gray-400 text-sm">ID</th>
-                                <th className="px-6 py-4 text-left text-gray-400 text-sm">Nombre</th>
-                                <th className="px-6 py-4 text-left text-gray-400 text-sm">Precio</th>
-                                <th className="px-6 py-4 text-left text-gray-400 text-sm">Categoría</th>
-                                <th className="px-6 py-4 text-left text-gray-400 text-sm">Estado</th>
-                                <th className="px-6 py-4 text-left text-gray-400 text-sm">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {productos.map((p, i) => (
-                                <tr key={p.id} className={`border-t border-gray-800 hover:bg-gray-800 transition ${i % 2 === 0 ? '' : 'bg-gray-900'}`}>
-                                    <td className="px-6 py-4 text-gray-500">#{p.id}</td>
-                                    <td className="px-6 py-4 font-semibold text-white">{p.nombre}</td>
-                                    <td className="px-6 py-4 text-orange-400 font-bold">${p.precio}</td>
-                                    <td className="px-6 py-4 text-gray-400">{p.id_categoria}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${p.activo ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
-                                            {p.activo ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 flex gap-2">
-                                        <button onClick={() => handleEditar(p)}
-                                            className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition">
-                                            Editar
-                                        </button>
-                                        <button onClick={() => handleEliminar(p.id)}
-                                            className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700 transition">
-                                            Eliminar
-                                        </button>
-                                    </td>
+                {mostrarForm && tab === 'cupones' && (
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-8">
+                        <h3 className="font-bold text-lg mb-4">Nuevo Cupón</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input placeholder="Código (ej: DESCUENTO10)" value={formCupon.codigo} onChange={e => setFormCupon({ ...formCupon, codigo: e.target.value })}
+                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                            <select value={formCupon.tipo} onChange={e => setFormCupon({ ...formCupon, tipo: e.target.value })}
+                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="porcentaje">Porcentaje (%)</option>
+                                <option value="fijo">Monto Fijo ($)</option>
+                            </select>
+                            <input placeholder="Valor" type="number" value={formCupon.valor} onChange={e => setFormCupon({ ...formCupon, valor: e.target.value })}
+                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                            <input placeholder="Usos máximos" type="number" value={formCupon.uso_maximo} onChange={e => setFormCupon({ ...formCupon, uso_maximo: e.target.value })}
+                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                            <input type="date" value={formCupon.fecha_inicio} onChange={e => setFormCupon({ ...formCupon, fecha_inicio: e.target.value })}
+                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                            <input type="date" value={formCupon.fecha_fin} onChange={e => setFormCupon({ ...formCupon, fecha_fin: e.target.value })}
+                                className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                            <button onClick={guardarCupon}
+                                className="md:col-span-2 bg-orange-500 text-white py-2 rounded-xl hover:bg-orange-600 transition font-semibold">
+                                Guardar Cupón
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'descuentos' && (
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+                        <table className="w-full">
+                            <thead className="bg-gray-800">
+                                <tr>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Nombre</th>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Tipo</th>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Valor</th>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Vigencia</th>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Acciones</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {descuentos.length === 0 && (
+                                    <tr><td colSpan="5" className="px-6 py-8 text-center text-gray-500">No hay descuentos registrados</td></tr>
+                                )}
+                                {descuentos.map(d => (
+                                    <tr key={d.id} className="border-t border-gray-800 hover:bg-gray-800 transition">
+                                        <td className="px-6 py-4 font-semibold">{d.nombre}</td>
+                                        <td className="px-6 py-4 text-gray-400">{d.tipo}</td>
+                                        <td className="px-6 py-4 text-orange-400 font-bold">{d.tipo === 'porcentaje' ? `${d.valor}%` : `$${d.valor}`}</td>
+                                        <td className="px-6 py-4 text-gray-400 text-sm">{d.fecha_inicio} → {d.fecha_fin}</td>
+                                        <td className="px-6 py-4">
+                                            <button onClick={() => eliminarDescuento(d.id)}
+                                                className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700 transition">
+                                                Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {tab === 'cupones' && (
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+                        <table className="w-full">
+                            <thead className="bg-gray-800">
+                                <tr>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Código</th>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Tipo</th>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Valor</th>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Usos</th>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Vigencia</th>
+                                    <th className="px-6 py-4 text-left text-gray-400 text-sm">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {cupones.length === 0 && (
+                                    <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">No hay cupones registrados</td></tr>
+                                )}
+                                {cupones.map(c => (
+                                    <tr key={c.id} className="border-t border-gray-800 hover:bg-gray-800 transition">
+                                        <td className="px-6 py-4 font-bold text-orange-400">{c.codigo}</td>
+                                        <td className="px-6 py-4 text-gray-400">{c.tipo}</td>
+                                        <td className="px-6 py-4 text-orange-400 font-bold">{c.tipo === 'porcentaje' ? `${c.valor}%` : `$${c.valor}`}</td>
+                                        <td className="px-6 py-4 text-gray-400">{c.usos_actuales}/{c.uso_maximo}</td>
+                                        <td className="px-6 py-4 text-gray-400 text-sm">{c.fecha_inicio} → {c.fecha_fin}</td>
+                                        <td className="px-6 py-4">
+                                            <button onClick={() => eliminarCupon(c.id)}
+                                                className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700 transition">
+                                                Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );
 }
-
-export default AdminProductos;
