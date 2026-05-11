@@ -57,7 +57,7 @@ export default function Descuentos() {
     };
 
     return (
-        <div style={{ padding: '20px', color: 'white' }}>
+        <div style={{ padding: '20px', color: 'white', background: '#0f0f1a', minHeight: '100vh' }}>
             <h2>🏷️ Descuentos y Cupones</h2>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
