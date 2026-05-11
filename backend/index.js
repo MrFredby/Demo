@@ -19,6 +19,8 @@ const categoriasRoutes = require('./routes/categorias');
 const carritoRoutes = require('./routes/carrito');
 const pedidosRoutes = require('./routes/pedidos');
 const vehiculosRoutes = require('./routes/vehiculos');
+const descuentosRoutes = require('./routes/descuentos');
+const cuponesRoutes = require('./routes/cupones');
 
 app.use('/api/productos', productosRoutes);
 app.use('/api/usuarios', usuariosRoutes);
@@ -26,6 +28,8 @@ app.use('/api/categorias', categoriasRoutes);
 app.use('/api/carrito', carritoRoutes);
 app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/vehiculos', vehiculosRoutes);
+app.use('/api/descuentos', descuentosRoutes);
+app.use('/api/cupones', cuponesRoutes);
 
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API Manijauto funcionando correctamente' });
