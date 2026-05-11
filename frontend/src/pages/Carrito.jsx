@@ -5,6 +5,9 @@ import Navbar from '../components/Navbar';
 function Carrito() {
     const [carrito, setCarrito] = useState([]);
     const [procesando, setProcesando] = useState(false);
+    const [cupon, setCupon] = useState('');
+    const [descuento, setDescuento] = useState(null);
+    const [mensajeCupon, setMensajeCupon] = useState('');
     const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
 
     useEffect(() => {
@@ -21,19 +24,30 @@ function Carrito() {
             .catch(err => console.error(err));
     };
 
+    const validarCupon = async () => {
+        try {
+            const res = await api.post('/cupones/validar', { codigo: cupon });
+            setDescuento(res.data);
+            setMensajeCupon(`✅ Cupón aplicado: ${res.data.tipo === 'porcentaje' ? `${res.data.valor}% de descuento` : `$${res.data.valor} de descuento`}`);
+        } catch {
+            setDescuento(null);
+            setMensajeCupon('❌ Cupón inválido o expirado');
+        }
+    };
+
     const subtotal = carrito.reduce((acc, item) => acc + parseFloat(item.precio) * item.cantidad, 0);
-    const impuestos = subtotal * 0.16;
-    const total = subtotal + impuestos;
+    const descuentoValor = descuento
+        ? descuento.tipo === 'porcentaje'
+            ? subtotal * (descuento.valor / 100)
+            : parseFloat(descuento.valor)
+        : 0;
+    const subtotalConDescuento = subtotal - descuentoValor;
+    const impuestos = subtotalConDescuento * 0.16;
+    const total = subtotalConDescuento + impuestos;
 
     const handlePago = async () => {
-        if (!usuario) {
-            window.location.href = '/login';
-            return;
-        }
-        if (carrito.length === 0) {
-            alert('Tu carrito está vacío');
-            return;
-        }
+        if (!usuario) { window.location.href = '/login'; return; }
+        if (carrito.length === 0) { alert('Tu carrito está vacío'); return; }
         setProcesando(true);
         try {
             const detalles = carrito.map(item => ({
@@ -42,7 +56,6 @@ function Carrito() {
                 precio_unitario: parseFloat(item.precio),
                 subtotal: parseFloat(item.precio) * item.cantidad
             }));
-
             await api.post('/pedidos', {
                 id_usuario: usuario.id,
                 id_direccion: 1,
@@ -50,14 +63,13 @@ function Carrito() {
                 subtotal,
                 impuestos,
                 total,
+                descuento: descuentoValor,
+                id_cupon: descuento?.id,
                 detalles
             });
-
-            // Limpiar carrito
             for (const item of carrito) {
                 await api.delete(`/carrito/${item.id}`);
             }
-
             setCarrito([]);
             window.location.href = '/pedido-exitoso';
         } catch (err) {
@@ -86,13 +98,10 @@ function Carrito() {
                     <div className="bg-white rounded-2xl shadow p-10 text-center">
                         <p className="text-5xl mb-4">🛒</p>
                         <p className="text-gray-500 text-lg">Tu carrito está vacío</p>
-                        <a href="/" className="text-orange-500 font-semibold hover:underline mt-2 block">
-                            Ver productos
-                        </a>
+                        <a href="/" className="text-orange-500 font-semibold hover:underline mt-2 block">Ver productos</a>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Lista de productos */}
                         <div className="md:col-span-2 space-y-4">
                             {carrito.map(item => (
                                 <div key={item.id} className="bg-white rounded-2xl shadow p-4 flex justify-between items-center">
@@ -112,14 +121,38 @@ function Carrito() {
                             ))}
                         </div>
 
-                        {/* Resumen */}
-                        <div className="bg-white rounded-2xl shadow p-6 h-fit">
-                            <h3 className="font-bold text-gray-800 text-lg mb-4">Resumen del pedido</h3>
-                            <div className="space-y-2 text-sm">
+                        <div className="bg-white rounded-2xl shadow p-6 h-fit space-y-4">
+                            <h3 className="font-bold text-gray-800 text-lg">Resumen del pedido</h3>
+
+                            {/* Cupón */}
+                            <div>
+                                <p className="text-sm text-gray-600 mb-1 font-semibold">¿Tienes un cupón?</p>
+                                <div className="flex gap-2">
+                                    <input
+                                        value={cupon}
+                                        onChange={e => setCupon(e.target.value.toUpperCase())}
+                                        placeholder="Ej: MANIJAUTO10"
+                                        className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                    />
+                                    <button onClick={validarCupon}
+                                        className="bg-orange-500 text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-orange-600 transition">
+                                        Aplicar
+                                    </button>
+                                </div>
+                                {mensajeCupon && <p className={`text-xs mt-1 ${descuento ? 'text-green-600' : 'text-red-500'}`}>{mensajeCupon}</p>}
+                            </div>
+
+                            <div className="space-y-2 text-sm border-t pt-4">
                                 <div className="flex justify-between text-gray-600">
                                     <span>Subtotal</span>
                                     <span>${subtotal.toFixed(2)}</span>
                                 </div>
+                                {descuento && (
+                                    <div className="flex justify-between text-green-600 font-semibold">
+                                        <span>Descuento</span>
+                                        <span>-${descuentoValor.toFixed(2)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-gray-600">
                                     <span>IVA (16%)</span>
                                     <span>${impuestos.toFixed(2)}</span>
@@ -129,10 +162,9 @@ function Carrito() {
                                     <span className="text-orange-500">${total.toFixed(2)}</span>
                                 </div>
                             </div>
-                            <button
-                                onClick={handlePago}
-                                disabled={procesando}
-                                className="mt-6 w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition disabled:opacity-50">
+
+                            <button onClick={handlePago} disabled={procesando}
+                                className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition disabled:opacity-50">
                                 {procesando ? 'Procesando...' : '✅ Proceder al pago'}
                             </button>
                         </div>
