@@ -10,6 +10,7 @@ import Dashboard from './pages/admin/Dashboard';
 import AdminProductos from './pages/admin/Productos';
 import AdminCategorias from './pages/admin/Categorias';
 import AdminPedidos from './pages/admin/Pedidos';
+import AdminDescuentos from './pages/admin/Descuentos';
 import Buscar from './pages/Buscar';
 import PedidoExitoso from './pages/PedidoExitoso';
 
@@ -29,6 +30,7 @@ function App() {
         <Route path="/admin/productos" element={<AdminProductos />} />
         <Route path="/admin/categorias" element={<AdminCategorias />} />
         <Route path="/admin/pedidos" element={<AdminPedidos />} />
+        <Route path="/admin/descuentos" element={<AdminDescuentos />} />
         <Route path="/pedido-exitoso" element={<PedidoExitoso />} />
       </Routes>
     </BrowserRouter>
