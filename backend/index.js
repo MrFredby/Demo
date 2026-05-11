@@ -5,7 +5,11 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+    origin: ['https://demo-gamma-three-39.vercel.app', 'http://localhost:5173'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 const db = require('./db');
@@ -15,7 +19,6 @@ const categoriasRoutes = require('./routes/categorias');
 const carritoRoutes = require('./routes/carrito');
 const pedidosRoutes = require('./routes/pedidos');
 const vehiculosRoutes = require('./routes/vehiculos');
-
 
 app.use('/api/productos', productosRoutes);
 app.use('/api/usuarios', usuariosRoutes);
