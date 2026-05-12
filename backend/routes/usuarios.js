@@ -39,7 +39,11 @@ router.post('/login', (req, res) => {
 
         if (!passwordValida) return res.status(401).json({ mensaje: 'Contraseña incorrecta' });
 
-        const token = jwt.sign({ id: usuario.id, email: usuario.email }, 'secreto_manijauto', { expiresIn: '8h' });
+        const token = jwt.sign(
+                    { id: usuario.id, email: usuario.email, rol: usuario.rol },
+                    process.env.JWT_SECRET,
+                    { expiresIn: '8h' }
+                );
 
         res.json({ mensaje: 'Login exitoso', token, usuario: {
             id: usuario.id,
